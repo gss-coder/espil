@@ -7,13 +7,18 @@ from selenium.webdriver.common.by import By
 from googletrans import Translator
 from selenium import webdriver
 from collections import Counter
+import requests
+import os
 import re
-
-
 
 # Automatically download and use the correct ChromeDriver
 service = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=service)
+
+# Directory to save images
+image_dir = "article_images"
+os.makedirs(image_dir, exist_ok=True)
+
 
 # Initialize Google Translator
 translator = Translator()
@@ -104,6 +109,26 @@ try:
         # Store the title and content in the dictionary
         articles_dict[title] = content_text
         print(f"Content for Article {index} fetched.")
+
+
+        # Fetch the image from the article
+        try:
+            print(f"Fetching image for Article {index}...")
+            image_element = driver.find_element(By.XPATH, '/html/body/article/header/div[2]/figure/span/img')
+            image_url = image_element.get_attribute("src")
+
+            # Download the image
+            response = requests.get(image_url)
+            if response.status_code == 200:
+                image_path = os.path.join(image_dir, f"article_{index}.jpg")
+                with open(image_path, "wb") as img_file:
+                    img_file.write(response.content)
+                print(f"Image for Article {index} saved at {image_path}.")
+            else:
+                print(f"Failed to download image for Article {index}.")
+        except Exception as e:
+            print(f"Image not found for Article {index}: {e}")
+
 
     # Print the results
     print("\nArticles fetched:")
